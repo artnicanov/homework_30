@@ -132,17 +132,19 @@ class AdDetailView(generic.DetailView):
 
 		return JsonResponse(result, safe=False)
 
-# вьюшка для создания нового объявления, работает только через админку, через постман пока нет, доделать
+# вьюшка для создания нового объявления
 @method_decorator(csrf_exempt, name='dispatch')
 class AdCreateView(generic.CreateView):
 	model = Ad
-	fields = ['username']
 
 	def post(self, request, *args, **kwargs):
 		data = json.loads(request.body)
+		data['author_id'] = User.objects.get(id=data['author_id'])
+		del data['author_id']
 		ad = Ad.objects.create(**data)
 		result = serialize(Ad, ad)
 		return JsonResponse(result, safe=False)
+
 
 # вьюшка для изменения объявления по id
 @method_decorator(csrf_exempt, name='dispatch')
@@ -216,14 +218,15 @@ class UserDetailView(generic.DetailView):
 
 		return JsonResponse(result, safe=False)
 
-# вьюшка для создания нового пользователя, работает только через админку, через постман пока нет, доделать
+# вьюшка для создания нового пользователя
 @method_decorator(csrf_exempt, name='dispatch')
 class UserCreateView(generic.CreateView):
 	model = User
-	fields = ['username']
 
 	def post(self, request, *args, **kwargs):
 		data = json.loads(request.body)
+		data['location'] = User.objects.get(id=data['location'])
+		del data['location']
 		user = User.objects.create(**data)
 		result = serialize(User, user)
 		return JsonResponse(result, safe=False)
