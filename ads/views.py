@@ -7,7 +7,8 @@ from django.utils.decorators import method_decorator
 from django.views import generic
 from django.views.decorators.csrf import csrf_exempt
 from ads.models import Category, Ad
-from users.models import User
+from users.models import User, Location
+
 
 def root(request):
 	return JsonResponse({"status": "ok"})
@@ -104,18 +105,16 @@ class AdListView(generic.ListView):
 
 	def get(self, request, *args, **kwargs):
 		super().get(request, *args, **kwargs)
-		self.object_list = self.object_list.select_related('author_id').order_by('-price')  # сортировка объявлений по убыванию цены
+		self.object_list = self.object_list.select_related('author').order_by('-price')  # сортировка объявлений по убыванию цены
 		paginator = Paginator(self.object_list, settings.TOTAL_ON_PAGE)
 		page_number = request.GET.get('page')
 		page_obj = paginator.get_page(page_number)
 		ads = serialize(Ad, page_obj)
-
 		response = {
 			"items": ads,
 			"num_pages": page_obj.paginator.num_pages,
 			"total": page_obj.paginator.count
 		}
-
 		return JsonResponse(response, safe=False)
 
 
@@ -128,9 +127,18 @@ class AdDetailView(generic.DetailView):
 			ad = Ad.objects.get(pk=kwargs['pk'])
 		except Ad.DoesNotExist as e:
 			return JsonResponse({'detail': "Объявление не найдено"}, status=404)
-		result = serialize(Ad, ad)
-
-		return JsonResponse(result, safe=False)
+		# result = serialize(Ad, ad)
+		# return JsonResponse(result, safe=False)
+		return JsonResponse({
+			"id": ad.id,
+			"name": ad.name,
+			"author_id": ad.author_id,
+			"price": ad.price,
+			"description": ad.description,
+			"is_published": ad.is_published,
+			"category_id": ad.category_id,
+			"image": ad.image.url if ad.image else None,
+		})
 
 # вьюшка для создания нового объявления
 @method_decorator(csrf_exempt, name='dispatch')
@@ -139,12 +147,19 @@ class AdCreateView(generic.CreateView):
 
 	def post(self, request, *args, **kwargs):
 		data = json.loads(request.body)
-		data['author_id'] = Ad.objects.get(id=data['author_id'])
+		data['author'] = User.objects.get(id=data['author_id'])
 		del data['author_id']
 		ad = Ad.objects.create(**data)
-		result = serialize(Ad, ad)
-		return JsonResponse(result, safe=False)
-
+		return JsonResponse({
+			"id": ad.id,
+			"name": ad.name,
+			"author_id": ad.author_id,
+			"price": ad.price,
+			"description": ad.description,
+			"is_published": ad.is_published,
+			"category_id": ad.category_id,
+			"image": ad.image.url if ad.image else None,
+		})
 
 # вьюшка для изменения объявления по id
 @method_decorator(csrf_exempt, name='dispatch')
@@ -160,8 +175,16 @@ class AdUpdateView(generic.UpdateView):
 		ad.price = data['price']
 		ad.address = data['address']
 		ad.save()
-		result = serialize(Ad, ad)
-		return JsonResponse(result, safe=False)
+		return JsonResponse({
+			"id": ad.id,
+			"name": ad.name,
+			"author_id": ad.author_id,
+			"price": ad.price,
+			"description": ad.description,
+			"is_published": ad.is_published,
+			"category_id": ad.category_id,
+			"image": ad.image.url if ad.image else None,
+		})
 
 # вьюшка для удаления объявления по id
 @method_decorator(csrf_exempt, name='dispatch')
@@ -229,7 +252,7 @@ class UserCreateView(generic.CreateView):
 		data = json.loads(request.body)
 		# data['location'] = User.objects.get(id=data['location'])
 		# del data['location']
-		data['location_id'] = User.objects.get(id=data['location_id'])
+		data['location_id'] = Location.objects.get(id=data['location_id'])
 		del data['location_id']
 		user = User.objects.create(**data)
 		result = serialize(User, user)
@@ -243,6 +266,7 @@ class UserUpdateView(generic.UpdateView):
 	def patch(self, request, *args, **kwargs):
 		data = json.loads(request.body)
 		user = User.objects.get(id=kwargs['pk'])
+		user.first_name = data['first_name']
 		user.password = data['password']
 		user.role = data['role']
 		user.username = data['username']
