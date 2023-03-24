@@ -139,7 +139,7 @@ class AdCreateView(generic.CreateView):
 
 	def post(self, request, *args, **kwargs):
 		data = json.loads(request.body)
-		data['author_id'] = User.objects.get(id=data['author_id'])
+		data['author_id'] = Ad.objects.get(id=data['author_id'])
 		del data['author_id']
 		ad = Ad.objects.create(**data)
 		result = serialize(Ad, ad)
@@ -158,6 +158,7 @@ class AdUpdateView(generic.UpdateView):
 		ad.name = data['name']
 		ad.description = data['description']
 		ad.price = data['price']
+		ad.address = data['address']
 		ad.save()
 		result = serialize(Ad, ad)
 		return JsonResponse(result, safe=False)
@@ -189,7 +190,7 @@ class AdUploadImageView(generic.UpdateView):
 
 ############# CRUD ДЛЯ ПОЛЬЗОВАТЕЛЕЙ ###############
 
-# вьюшка для вывода списка пользователей
+#вьюшка для вывода списка пользователей
 class UserListView(generic.ListView):
 	model = User
 	queryset = User.objects.all()
@@ -223,10 +224,13 @@ class UserDetailView(generic.DetailView):
 class UserCreateView(generic.CreateView):
 	model = User
 
+	# метод ниже работает если в модели User используется связь Foreignkey вместо Many2Many
 	def post(self, request, *args, **kwargs):
 		data = json.loads(request.body)
-		data['location'] = User.objects.get(id=data['location'])
-		del data['location']
+		# data['location'] = User.objects.get(id=data['location'])
+		# del data['location']
+		data['location_id'] = User.objects.get(id=data['location_id'])
+		del data['location_id']
 		user = User.objects.create(**data)
 		result = serialize(User, user)
 		return JsonResponse(result, safe=False)
@@ -240,6 +244,8 @@ class UserUpdateView(generic.UpdateView):
 		data = json.loads(request.body)
 		user = User.objects.get(id=kwargs['pk'])
 		user.password = data['password']
+		user.role = data['role']
+		user.username = data['username']
 		user.save()
 		result = serialize(User, user)
 		return JsonResponse(result, safe=False)
