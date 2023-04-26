@@ -26,3 +26,16 @@ class Ad(models.Model):
 
 	def __str__(self):
 		return self.name
+
+
+class Selection(models.Model):
+	name = models.CharField(max_length=200)
+	owner = models.ForeignKey('users.User', on_delete=models.CASCADE)
+	items = models.ManyToManyField(Ad)
+
+	class Meta:
+		verbose_name = "Подборка"
+		verbose_name_plural = "Подборки"
+
+	def __str__(self):
+		return self.name

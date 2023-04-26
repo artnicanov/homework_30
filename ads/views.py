@@ -2,8 +2,11 @@ from django.http import JsonResponse
 from django.utils.decorators import method_decorator
 from django.views import generic
 from django.views.decorators.csrf import csrf_exempt
-from ads.models import Category, Ad
-from ads.serializers import AdSerializer, CatSerializer
+from rest_framework.permissions import IsAuthenticated, AllowAny
+
+from ads.models import Category, Ad, Selection
+from ads.permissions import IsOwner, IsStaff
+from ads.serializers import AdSerializer, CatSerializer, SelectionSerializer
 from rest_framework.viewsets import ModelViewSet
 
 
@@ -41,6 +44,17 @@ class AdViewSet(ModelViewSet):
 	serializer_class = AdSerializer
 	queryset = Ad.objects.order_by('-price')
 
+	# собственные permissions позволят закрыть авторизацией только конкретный эндпоинт из всего ViewSet
+	default_permisssion = [AllowAny]
+	permissions = {
+		"retrieve": [IsAuthenticated],
+		"update": [IsAuthenticated, IsOwner | IsStaff],
+		"partial_update": [IsAuthenticated, IsOwner | IsStaff],
+		"destroy": [IsAuthenticated, IsOwner | IsStaff]
+	}
+
+	def get_permissions(self):
+		return [permission() for permission in self.permissions.get(self.action, self.default_permisssion)]
 
 	# функции с lookup's для поисковых фильтров
 	def list(self, request, *args, **kwargs):
@@ -85,3 +99,22 @@ class AdUploadImageView(generic.UpdateView):
 
 		result = serialize(self.model, self.object)
 		return JsonResponse(result, safe=False)
+
+
+# CRUD для подборки объявлений в одной DRF вьюшке
+class SelectionViewSet(ModelViewSet):
+	serializer_class = SelectionSerializer
+	queryset = Selection.objects.all()
+
+	# собственные permissions позволят закрыть авторизацией только конкретный эндпоинт из всего ViewSet
+	default_permisssion = [AllowAny]
+	permissions = {
+		"create": [IsAuthenticated],
+		"update": [IsAuthenticated, IsOwner],
+		"partial_update": [IsAuthenticated, IsOwner],
+		"destroy": [IsAuthenticated, IsOwner],
+	}
+
+	def get_permissions(self):
+		return [permission() for permission in self.permissions.get(self.action, self.default_permisssion)]
+

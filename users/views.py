@@ -3,7 +3,8 @@ from rest_framework.generics import CreateAPIView, RetrieveAPIView, ListAPIView,
 from rest_framework.viewsets import ModelViewSet
 
 from users.models import User, Location
-from users.serializers import UserSerializer, UserListSerializer, UserDetailSerializer, LocationSerializer
+from users.serializers import UserSerializer, UserListSerializer, UserDetailSerializer, LocationSerializer, \
+	UseCreateSerializer
 
 
 class UserPagination(PageNumberPagination):
@@ -12,7 +13,7 @@ class UserPagination(PageNumberPagination):
 
 # CRUD для пользователей с generic views
 class UserCreateView(CreateAPIView):
-	serializer_class = UserSerializer
+	serializer_class = UseCreateSerializer
 	queryset = User.objects.all()
 
 
